@@ -44,7 +44,7 @@ public final class StartupGreetingModule extends ListenerAdapter implements BotM
 
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(Color.GREEN)
-                .setTitle("Started")
+                .setTitle("שלום!")
                 .setDescription("Viki has started!");
 
         channel.sendMessageEmbeds(embed.build()).queue(
