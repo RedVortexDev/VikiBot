@@ -1,0 +1,15 @@
+[versions]
+java = "25"
+checkstyle = "12.3.1"
+jda = "5.6.1"
+nightConfig = "3.6.5"
+shadow = "9.3.1"
+slf4j = "2.0.17"
+
+[libraries]
+jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
+nightConfig = { module = "com.electronwill.night-config:toml", version.ref = "nightConfig" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
