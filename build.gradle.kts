@@ -36,6 +36,10 @@ checkstyle {
     toolVersion = libs.versions.checkstyle.get()
 }
 
+tasks.shadowJar {
+    archiveFileName.set("vikibot.jar")
+}
+
 tasks.named("build") {
     dependsOn(tasks.named("shadowJar"))
 }
