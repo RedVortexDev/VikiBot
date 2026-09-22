@@ -1,0 +1,44 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: { }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          ping: ${{ vars.DEPLOY_TAILSCALE_IP }}
+
+      - name: Configure deployment SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_TAILSCALE_IP: ${{ vars.DEPLOY_TAILSCALE_IP }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          ssh-keyscan -T 10 -H "$DEPLOY_TAILSCALE_IP" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Trigger deployment
+        env:
+          DEPLOY_TAILSCALE_IP: ${{ vars.DEPLOY_TAILSCALE_IP }}
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -o IdentitiesOnly=yes \
+            github-deploy@"$DEPLOY_TAILSCALE_IP"
