@@ -18,7 +18,7 @@ public final class GlossaryMessage {
     public static MessageEmbed embed(Glossary glossary) {
         StringBuilder description = new StringBuilder();
         for (Term term : glossary.terms()) {
-            description.append(formatTerm(term)).append('\n');
+            description.append(formatGlossaryTerm(term)).append('\n');
         }
 
         return new EmbedBuilder()
@@ -34,7 +34,7 @@ public final class GlossaryMessage {
         return new EmbedBuilder()
                 .setColor(Color.GREEN)
                 .setTitle(term.english(), PAGE_URL)
-                .setDescription(formatTerm(term))
+                .setDescription(formatDefinition(term))
                 .build();
     }
 
@@ -42,8 +42,17 @@ public final class GlossaryMessage {
         return TITLE.equals(embed.getTitle()) && PAGE_URL.equals(embed.getUrl());
     }
 
-    private static String formatTerm(Term term) {
-        StringBuilder definition = new StringBuilder().append("__").append(term.hebrew()).append("__");
+    private static String formatGlossaryTerm(Term term) {
+        StringBuilder definition = new StringBuilder()
+                .append("**").append(term.english()).append("** - ").append(term.hebrew());
+        if (!term.note().isBlank()) {
+            definition.append("\n> ").append(term.note());
+        }
+        return definition.toString();
+    }
+
+    private static String formatDefinition(Term term) {
+        StringBuilder definition = new StringBuilder("__").append(term.hebrew()).append("__");
         if (!term.note().isBlank()) {
             definition.append("\n(").append(term.note()).append(")");
         }

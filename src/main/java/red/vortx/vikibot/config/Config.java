@@ -1,21 +1,22 @@
 package red.vortx.vikibot.config;
 
 import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import com.electronwill.nightconfig.core.conversion.ObjectConverter;
-import com.electronwill.nightconfig.core.conversion.Path;
-import com.electronwill.nightconfig.core.conversion.SpecLongInRange;
-import com.electronwill.nightconfig.core.conversion.SpecNotNull;
+import com.electronwill.nightconfig.core.serde.ObjectDeserializer;
+import com.electronwill.nightconfig.core.serde.annotations.SerdeAssert;
+import com.electronwill.nightconfig.core.serde.annotations.SerdeKey;
 
 public final class Config {
 
-    @SpecNotNull
+    private static final ObjectDeserializer DESERIALIZER = ObjectDeserializer.standard();
+
+    @SerdeAssert(SerdeAssert.AssertThat.NOT_NULL)
     private Discord discord;
 
     private Config() {
     }
 
     static Config from(UnmodifiableConfig configuration) {
-        return new ObjectConverter().toObject(configuration, Config::new);
+        return DESERIALIZER.deserializeFields(configuration, Config::new);
     }
 
     public Discord discord() {
@@ -24,12 +25,10 @@ public final class Config {
 
     public static final class Discord {
 
-        @Path("guild-id")
-        @SpecLongInRange(min = 1, max = Long.MAX_VALUE)
+        @SerdeKey("guild-id")
         private long guildId;
 
-        @Path("glossary-channel")
-        @SpecLongInRange(min = 1, max = Long.MAX_VALUE)
+        @SerdeKey("glossary-channel")
         private long glossaryChannel;
 
         private Discord() {

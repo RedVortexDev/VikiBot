@@ -24,7 +24,6 @@ import red.vortx.vikibot.glossary.GlossaryMessage;
 import red.vortx.vikibot.glossary.MediaWikiGlossary;
 import red.vortx.vikibot.glossary.Term;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -123,7 +122,7 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
 
         Term term = found.orElseThrow();
         event.replyEmbeds(GlossaryMessage.term(term))
-                .setAllowedMentions(Collections.emptyList())
+                .setAllowedMentions(List.of())
                 .queue();
     }
 
@@ -138,7 +137,7 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
 
         Glossary current = glossary;
         if (current == null) {
-            event.replyChoices(Collections.emptyList()).queue();
+            event.replyChoices(List.of()).queue();
             return;
         }
 
