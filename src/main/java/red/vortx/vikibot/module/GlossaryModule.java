@@ -8,18 +8,16 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
+import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.requests.GatewayIntent;
 import red.vortx.vikibot.VikiBot;
 import red.vortx.vikibot.application.BotModule;
 import red.vortx.vikibot.config.Config;
 import red.vortx.vikibot.glossary.Glossary;
-import red.vortx.vikibot.glossary.GlossaryChange;
 import red.vortx.vikibot.glossary.GlossaryMessage;
 import red.vortx.vikibot.glossary.MediaWikiGlossary;
 import red.vortx.vikibot.glossary.Term;
@@ -27,6 +25,8 @@ import red.vortx.vikibot.glossary.Term;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,16 +35,17 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
     private static final Logger LOGGER = Logger.getLogger(GlossaryModule.class.getName());
     private static final int HISTORY_PAGE_SIZE = 100;
     private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
+    private static final long REFRESH_INTERVAL_MINUTES = 10;
 
     private final MediaWikiGlossary wiki = new MediaWikiGlossary(MediaWikiGlossary.API);
     private volatile Glossary glossary;
     private volatile String glossaryMessageId;
+    private ScheduledFuture<?> scheduledRefresh;
     private boolean refreshing;
     private boolean refreshAgain;
 
     @Override
     public void register(JDABuilder builder) {
-        builder.enableIntents(GatewayIntent.MESSAGE_CONTENT);
         builder.addEventListeners(this);
     }
 
@@ -68,29 +69,16 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
                         failure -> LOGGER.log(Level.SEVERE, "Failed to register /term", failure)
                 );
         refresh(event.getJDA());
+        scheduleRefresh(event.getJDA());
     }
 
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        Config.Discord config = VikiBot.config().discord();
-        if (!event.isFromGuild() || event.getGuild().getIdLong() != config.guildId()
-                || event.getAuthor().getIdLong() == event.getJDA().getSelfUser().getIdLong()) {
-            return;
-        }
-
-        Message message = event.getMessage();
-        StringBuilder text = new StringBuilder(message.getContentRaw());
-        for (MessageEmbed embed : message.getEmbeds()) {
-            append(text, embed.getTitle());
-            append(text, embed.getDescription());
-            append(text, embed.getUrl());
-            embed.getFields().forEach(field -> {
-                append(text, field.getName());
-                append(text, field.getValue());
-            });
-        }
-        if (GlossaryChange.isGlossaryChange(text.toString())) {
-            refresh(event.getJDA());
+    public void onShutdown(ShutdownEvent event) {
+        synchronized (this) {
+            if (scheduledRefresh != null) {
+                scheduledRefresh.cancel(false);
+                scheduledRefresh = null;
+            }
         }
     }
 
@@ -148,10 +136,16 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
         event.replyChoices(choices).queue();
     }
 
-    private static void append(StringBuilder text, String value) {
-        if (value != null) {
-            text.append(' ').append(value);
+    private synchronized void scheduleRefresh(JDA jda) {
+        if (scheduledRefresh != null) {
+            return;
         }
+        scheduledRefresh = jda.getRateLimitPool().scheduleWithFixedDelay(
+                () -> refresh(jda),
+                REFRESH_INTERVAL_MINUTES,
+                REFRESH_INTERVAL_MINUTES,
+                TimeUnit.MINUTES
+        );
     }
 
     private synchronized void refresh(JDA jda) {
