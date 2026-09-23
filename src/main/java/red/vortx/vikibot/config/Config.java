@@ -28,9 +28,9 @@ public final class Config {
         @SpecLongInRange(min = 1, max = Long.MAX_VALUE)
         private long guildId;
 
-        @Path("bot-log-channel")
+        @Path("glossary-channel")
         @SpecLongInRange(min = 1, max = Long.MAX_VALUE)
-        private long botLogChannel;
+        private long glossaryChannel;
 
         private Discord() {
         }
@@ -39,8 +39,8 @@ public final class Config {
             return guildId;
         }
 
-        public long botLogChannel() {
-            return botLogChannel;
+        public long glossaryChannel() {
+            return glossaryChannel;
         }
 
     }

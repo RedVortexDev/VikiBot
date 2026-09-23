@@ -3,7 +3,8 @@ package red.vortx.vikibot;
 import red.vortx.vikibot.application.BotApplication;
 import red.vortx.vikibot.config.Config;
 import red.vortx.vikibot.config.ConfigurationLoader;
-import red.vortx.vikibot.module.StartupGreetingModule;
+import red.vortx.vikibot.module.GlossaryModule;
+import red.vortx.vikibot.module.StatusModule;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +28,8 @@ public final class VikiBot {
         CONFIG = new ConfigurationLoader().load(configPath);
 
         new BotApplication(token, List.of(
-                new StartupGreetingModule()
+                new StatusModule(),
+                new GlossaryModule()
         )).start();
     }
 

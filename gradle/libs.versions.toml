@@ -1,14 +1,16 @@
 [versions]
 java = "25"
-checkstyle = "12.3.1"
-jda = "5.6.1"
-nightConfig = "3.6.5"
-shadow = "9.3.1"
-slf4j = "2.0.17"
+checkstyle = "14.1.0"
+jda = "6.6.0"
+nightConfig = "3.9.0"
+jackson = "3.2.2"
+shadow = "9.6.1"
+slf4j = "2.0.19"
 
 [libraries]
 jda = { module = "net.dv8tion:JDA", version.ref = "jda" }
 nightConfig = { module = "com.electronwill.night-config:toml", version.ref = "nightConfig" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 [plugins]

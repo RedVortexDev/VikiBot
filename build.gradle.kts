@@ -15,6 +15,7 @@ repositories {
 dependencies {
     implementation(libs.jda)
     implementation(libs.nightConfig)
+    implementation(libs.jackson.databind)
     runtimeOnly(libs.slf4j.simple)
 }
 
@@ -42,4 +43,8 @@ tasks.shadowJar {
 
 tasks.named("build") {
     dependsOn(tasks.named("shadowJar"))
+}
+
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.file("run")
 }
