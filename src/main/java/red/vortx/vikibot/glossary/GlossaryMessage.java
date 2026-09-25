@@ -17,8 +17,16 @@ public final class GlossaryMessage {
 
     public static MessageEmbed embed(Glossary glossary) {
         StringBuilder description = new StringBuilder();
-        for (Term term : glossary.terms()) {
-            description.append(formatGlossaryTerm(term)).append('\n');
+        for (GlossarySection section : glossary.sections()) {
+            if (!section.title().isBlank()) {
+                if (!description.isEmpty()) {
+                    description.append('\n');
+                }
+                description.append("**").append(section.title()).append("**\n");
+            }
+            for (Term term : section.terms()) {
+                description.append(formatGlossaryTerm(term)).append('\n');
+            }
         }
 
         return new EmbedBuilder()
