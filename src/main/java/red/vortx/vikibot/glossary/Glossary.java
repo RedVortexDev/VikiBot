@@ -62,10 +62,11 @@ public record Glossary(List<Term> terms) {
         if (cells.isEmpty()) {
             return;
         }
-        if (cells.size() != 3 || cells.get(0).isBlank() || cells.get(1).isBlank()) {
+        if ((cells.size() != 2 && cells.size() != 3) || cells.get(0).isBlank() || cells.get(1).isBlank()) {
             throw new IllegalArgumentException("Invalid glossary row: " + cells);
         }
-        terms.add(new Term(cells.get(0), cells.get(1), cells.get(2)));
+        String note = cells.size() == 3 ? cells.get(2) : "";
+        terms.add(new Term(cells.get(0), cells.get(1), note));
     }
 
 }
