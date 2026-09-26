@@ -3,15 +3,17 @@ package red.vortx.vikibot.module;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
-import net.dv8tion.jda.api.events.session.ShutdownEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import red.vortx.vikibot.VikiBot;
@@ -26,8 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,16 +35,16 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
 
     private static final Logger LOGGER = Logger.getLogger(GlossaryModule.class.getName());
     private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
-    private static final long REFRESH_INTERVAL_MINUTES = 10;
+    private static final String GLOSSARY_PAGE_TITLE = "קהילה:מילון";
 
     private final MediaWikiGlossary wiki = new MediaWikiGlossary(MediaWikiGlossary.API);
     private volatile Glossary glossary;
-    private ScheduledFuture<?> scheduledRefresh;
     private boolean refreshing;
     private boolean refreshAgain;
 
     @Override
     public void register(JDABuilder builder) {
+        builder.enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         builder.addEventListeners(this);
     }
 
@@ -68,16 +68,23 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
                         failure -> LOGGER.log(Level.SEVERE, "Failed to register /term", failure)
                 );
         refresh(event.getJDA());
-        scheduleRefresh(event.getJDA());
     }
 
     @Override
-    public void onShutdown(ShutdownEvent event) {
-        synchronized (this) {
-            if (scheduledRefresh != null) {
-                scheduledRefresh.cancel(false);
-                scheduledRefresh = null;
-            }
+    public void onMessageReceived(MessageReceivedEvent event) {
+        Config.Discord config = VikiBot.config().discord();
+        if (event.getChannel().getIdLong() != config.recentChangesChannel()) {
+            return;
+        }
+
+        List<MessageEmbed> embeds = event.getMessage().getEmbeds();
+        if (embeds.size() != 1) {
+            return;
+        }
+
+        String title = embeds.getFirst().getTitle();
+        if (title != null && title.contains(GLOSSARY_PAGE_TITLE)) {
+            refresh(event.getJDA());
         }
     }
 
@@ -133,18 +140,6 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
                 .map(term -> new Command.Choice(term.english(), term.english()))
                 .toList();
         event.replyChoices(choices).queue();
-    }
-
-    private synchronized void scheduleRefresh(JDA jda) {
-        if (scheduledRefresh != null) {
-            return;
-        }
-        scheduledRefresh = jda.getRateLimitPool().scheduleWithFixedDelay(
-                () -> refresh(jda),
-                REFRESH_INTERVAL_MINUTES,
-                REFRESH_INTERVAL_MINUTES,
-                TimeUnit.MINUTES
-        );
     }
 
     private synchronized void refresh(JDA jda) {

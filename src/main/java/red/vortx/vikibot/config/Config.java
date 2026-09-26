@@ -63,6 +63,9 @@ public final class Config {
         @SerdeKey("glossary-channel")
         private long glossaryChannel;
 
+        @SerdeKey("recent-changes-channel")
+        private long recentChangesChannel;
+
         @SerdeKey("glossary-message-id")
         @SerdeSkipDeserializingIf(SerdeSkipDeserializingIf.SkipDeIf.IS_MISSING)
         private long glossaryMessageId;
@@ -76,6 +79,10 @@ public final class Config {
 
         public long glossaryChannel() {
             return glossaryChannel;
+        }
+
+        public long recentChangesChannel() {
+            return recentChangesChannel;
         }
 
         public OptionalLong glossaryMessageId() {
