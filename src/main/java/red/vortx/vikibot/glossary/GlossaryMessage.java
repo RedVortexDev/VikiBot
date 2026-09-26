@@ -34,7 +34,7 @@ public final class GlossaryMessage {
     public static MessageCreateData message(Glossary glossary) {
         List<ContainerChildComponent> content = new ArrayList<>();
         content.add(TextDisplay.of("# [מילון מונחים](" + PAGE_URL + ")"));
-        content.add(TextDisplay.of("-# עודכן לאחרונה: " + TimeFormat.DATE_TIME_SHORT.now()));
+        content.add(TextDisplay.of("-# עודכן לאחרונה: " + TimeFormat.DATE_SHORT_TIME_SHORT.now()));
         for (GlossarySection section : glossary.sections()) {
             content.add(Separator.createDivider(Spacing.SMALL));
             content.add(TextDisplay.of(formatSection(section)));
