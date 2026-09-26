@@ -1,10 +1,18 @@
 package red.vortx.vikibot.glossary;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.components.container.Container;
+import net.dv8tion.jda.api.components.container.ContainerChildComponent;
+import net.dv8tion.jda.api.components.separator.Separator;
+import net.dv8tion.jda.api.components.separator.Separator.Spacing;
+import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.awt.Color;
-import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class GlossaryMessage {
 
@@ -12,30 +20,6 @@ public final class GlossaryMessage {
     public static final String PAGE_URL = "https://he.minecraft.wiki/w/קהילה:מילון";
 
     private GlossaryMessage() {
-        throw new UnsupportedOperationException();
-    }
-
-    public static MessageEmbed embed(Glossary glossary) {
-        StringBuilder description = new StringBuilder();
-        for (GlossarySection section : glossary.sections()) {
-            if (!section.title().isBlank()) {
-                if (!description.isEmpty()) {
-                    description.append('\n');
-                }
-                description.append("**").append(section.title()).append("**\n");
-            }
-            for (Term term : section.terms()) {
-                description.append(formatGlossaryTerm(term)).append('\n');
-            }
-        }
-
-        return new EmbedBuilder()
-                .setColor(Color.GREEN)
-                .setTitle(TITLE, PAGE_URL)
-                .setDescription(description.toString())
-                .setFooter("עודכן לאחרונה")
-                .setTimestamp(Instant.now())
-                .build();
     }
 
     public static MessageEmbed term(Term term) {
@@ -46,17 +30,34 @@ public final class GlossaryMessage {
                 .build();
     }
 
-    public static boolean isGlossary(MessageEmbed embed) {
-        return TITLE.equals(embed.getTitle()) && PAGE_URL.equals(embed.getUrl());
+    public static MessageCreateData message(Glossary glossary) {
+        List<ContainerChildComponent> content = new ArrayList<>();
+        content.add(TextDisplay.of("# [מילון מונחים](" + PAGE_URL + ")"));
+        for (GlossarySection section : glossary.sections()) {
+            content.add(Separator.createDivider(Spacing.SMALL));
+            content.add(TextDisplay.of(formatSection(section)));
+        }
+        return new MessageCreateBuilder()
+                .useComponentsV2(true)
+                .addComponents(Container.of(content))
+                .build();
     }
 
-    private static String formatGlossaryTerm(Term term) {
-        StringBuilder definition = new StringBuilder()
-                .append("**").append(term.english()).append("** - ").append(term.hebrew());
-        if (!term.note().isBlank()) {
-            definition.append("\n> ").append(term.note());
+    private static String formatSection(GlossarySection section) {
+        String heading = section.title().isBlank() ? TITLE : "## " + section.title();
+        return heading + "\n" + formatTerms(section.terms());
+    }
+
+    private static String formatTerms(List<Term> terms) {
+        StringBuilder text = new StringBuilder();
+        for (Term term : terms) {
+            text.append("**").append(term.english()).append("** - ").append(term.hebrew());
+            if (!term.note().isBlank()) {
+                text.append("\n> ").append(term.note());
+            }
+            text.append('\n');
         }
-        return definition.toString();
+        return text.toString();
     }
 
     private static String formatDefinition(Term term) {

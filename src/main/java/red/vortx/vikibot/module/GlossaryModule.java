@@ -3,8 +3,6 @@ package red.vortx.vikibot.module;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -14,6 +12,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
+import net.dv8tion.jda.api.utils.messages.MessageEditBuilder;
 import red.vortx.vikibot.VikiBot;
 import red.vortx.vikibot.application.BotModule;
 import red.vortx.vikibot.config.Config;
@@ -24,6 +24,7 @@ import red.vortx.vikibot.glossary.Term;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -33,13 +34,11 @@ import java.util.logging.Logger;
 public final class GlossaryModule extends ListenerAdapter implements BotModule {
 
     private static final Logger LOGGER = Logger.getLogger(GlossaryModule.class.getName());
-    private static final int HISTORY_PAGE_SIZE = 100;
     private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
     private static final long REFRESH_INTERVAL_MINUTES = 10;
 
     private final MediaWikiGlossary wiki = new MediaWikiGlossary(MediaWikiGlossary.API);
     private volatile Glossary glossary;
-    private volatile String glossaryMessageId;
     private ScheduledFuture<?> scheduledRefresh;
     private boolean refreshing;
     private boolean refreshAgain;
@@ -176,55 +175,32 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
     }
 
     private CompletableFuture<Void> publish(JDA jda, Glossary next) {
-        Config.Discord config = VikiBot.config().discord();
-        Guild guild = jda.getGuildById(config.guildId());
-        TextChannel channel = guild == null ? null : guild.getTextChannelById(config.glossaryChannel());
+        Config config = VikiBot.config();
+        Config.Discord discord = config.discord();
+        Guild guild = jda.getGuildById(discord.guildId());
+        TextChannel channel = guild == null ? null : guild.getTextChannelById(discord.glossaryChannel());
         if (channel == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Configured glossary channel was not found: " + config.glossaryChannel()));
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Configured glossary channel was not found: " + discord.glossaryChannel())
+            );
         }
 
-        MessageEmbed embed = GlossaryMessage.embed(next);
-        return findMessage(channel, jda.getSelfUser().getIdLong(), null)
-                .thenCompose(existing -> {
-                    if (existing.isEmpty()) {
-                        return channel.sendMessageEmbeds(embed).submit().thenAccept(
-                                sent -> {
-                                    glossaryMessageId = sent.getId();
-                                    LOGGER.info("Published glossary in channel " + channel.getId());
-                                });
-                    }
-                    Message message = existing.orElseThrow();
-                    glossaryMessageId = message.getId();
-                    if (message.getEmbeds().getFirst().getDescription().equals(embed.getDescription())) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-                    return message.editMessageEmbeds(embed).submit().thenAccept(
-                            edited -> LOGGER.info("Updated glossary message " + edited.getId()));
-                });
-    }
-
-    private CompletableFuture<Optional<Message>> findMessage(TextChannel channel, long botId, String before) {
-        if (glossaryMessageId != null && before == null) {
-            return channel.retrieveMessageById(glossaryMessageId).submit().thenApply(Optional::of);
+        MessageCreateData messageData = GlossaryMessage.message(next);
+        OptionalLong configuredMessageId = discord.glossaryMessageId();
+        if (configuredMessageId.isEmpty()) {
+            return channel.sendMessage(messageData).submit().thenAccept(sent -> {
+                discord.setGlossaryMessageId(sent.getIdLong());
+                config.save();
+                LOGGER.info("Published glossary and saved message ID");
+            });
         }
 
-        CompletableFuture<List<Message>> page = before == null
-                ? channel.getHistory().retrievePast(HISTORY_PAGE_SIZE).submit()
-                : channel.getHistoryBefore(before, HISTORY_PAGE_SIZE).submit()
-                .thenApply(history -> history.getRetrievedHistory());
-
-        return page.thenCompose(messages -> {
-            for (Message message : messages) {
-                if (message.getAuthor().getIdLong() == botId && message.getEmbeds().stream()
-                        .anyMatch(GlossaryMessage::isGlossary)) {
-                    return CompletableFuture.completedFuture(Optional.of(message));
-                }
-            }
-            if (messages.size() < HISTORY_PAGE_SIZE) {
-                return CompletableFuture.completedFuture(Optional.empty());
-            }
-            return findMessage(channel, botId, messages.getLast().getId());
-        });
+        String messageId = Long.toString(configuredMessageId.getAsLong());
+        return channel.retrieveMessageById(messageId).submit().thenCompose(existing ->
+                existing.editMessage(MessageEditBuilder.fromCreateData(messageData).build()).submit().thenAccept(
+                        _ -> LOGGER.info("Updated glossary message")
+                )
+        );
     }
 
 }

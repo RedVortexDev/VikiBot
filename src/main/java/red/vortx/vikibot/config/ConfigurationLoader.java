@@ -19,7 +19,7 @@ public final class ConfigurationLoader {
 
         try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
             CommentedConfig document = TomlFormat.instance().createParser().parse(reader);
-            return Config.from(document);
+            return Config.from(document, configPath.toAbsolutePath());
         } catch (IOException | ParsingException exception) {
             throw new ConfigurationException("Invalid TOML in " + configPath, exception);
         } catch (RuntimeException exception) {

@@ -24,8 +24,7 @@ public final class VikiBot {
             throw new IllegalStateException("Environment variable " + TOKEN_ENVIRONMENT_VARIABLE + " must be set");
         }
 
-        Path configPath = Path.of(CONFIG_FILE_NAME);
-        CONFIG = new ConfigurationLoader().load(configPath);
+        CONFIG = new ConfigurationLoader().load(Path.of(CONFIG_FILE_NAME));
 
         new BotApplication(token, List.of(
                 new StatusModule(),
