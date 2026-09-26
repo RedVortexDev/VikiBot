@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.components.separator.Separator;
 import net.dv8tion.jda.api.components.separator.Separator.Spacing;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.utils.TimeFormat;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
@@ -33,6 +34,7 @@ public final class GlossaryMessage {
     public static MessageCreateData message(Glossary glossary) {
         List<ContainerChildComponent> content = new ArrayList<>();
         content.add(TextDisplay.of("# [מילון מונחים](" + PAGE_URL + ")"));
+        content.add(TextDisplay.of("-# עודכן לאחרונה: " + TimeFormat.DATE_TIME_SHORT.now()));
         for (GlossarySection section : glossary.sections()) {
             content.add(Separator.createDivider(Spacing.SMALL));
             content.add(TextDisplay.of(formatSection(section)));
