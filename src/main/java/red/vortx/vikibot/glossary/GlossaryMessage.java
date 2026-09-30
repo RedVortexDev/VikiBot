@@ -76,7 +76,7 @@ public final class GlossaryMessage {
 
     private static String encodePageTitle() {
         try {
-            return new URI(null, null, "/" + PAGE_TITLE, null, null).getPath().substring(1);
+            return new URI(null, null, "/" + PAGE_TITLE, null, null).toASCIIString().substring(1);
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Cannot encode string: " + GlossaryMessage.PAGE_TITLE, e);
         }
