@@ -12,13 +12,17 @@ import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 import java.awt.Color;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class GlossaryMessage {
 
     public static final String TITLE = "מילון מונחים";
-    public static final String PAGE_URL = "https://he.minecraft.wiki/w/קהילה:מילון";
+    public static final String PAGE_TITLE = "Minecraft Wiki:מילון";
+    public static final String URL_ENCODED_PAGE_TITLE = encodePageTitle();
+    public static final String PAGE_URL = "https://he.minecraft.wiki/w/" + URL_ENCODED_PAGE_TITLE;
 
     private GlossaryMessage() {
     }
@@ -68,6 +72,14 @@ public final class GlossaryMessage {
             definition.append("\n(").append(term.note()).append(")");
         }
         return definition.toString();
+    }
+
+    private static String encodePageTitle() {
+        try {
+            return new URI(null, null, "/" + PAGE_TITLE, null, null).getPath().substring(1);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Cannot encode string: " + GlossaryMessage.PAGE_TITLE, e);
+        }
     }
 
 }

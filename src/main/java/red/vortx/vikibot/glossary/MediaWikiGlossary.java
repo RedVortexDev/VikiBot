@@ -14,7 +14,9 @@ public final class MediaWikiGlossary {
 
     public static final URI API = URI.create("https://he.minecraft.wiki/api.php");
 
-    private static final String QUERY = "?action=parse&page=%D7%A7%D7%94%D7%99%D7%9C%D7%94%3A%D7%9E%D7%99%D7%9C%D7%95%D7%9F&prop=wikitext&format=json&formatversion=2";
+    private static final String QUERY = "?action=parse&page="
+            + GlossaryMessage.URL_ENCODED_PAGE_TITLE
+            + "&prop=wikitext&format=json&formatversion=2";
     public static final String USER_AGENT = "HebrewWikiBot";
 
     private final HttpClient httpClient;

@@ -35,7 +35,6 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
 
     private static final Logger LOGGER = Logger.getLogger(GlossaryModule.class.getName());
     private static final int MAX_AUTOCOMPLETE_CHOICES = 25;
-    private static final String GLOSSARY_PAGE_TITLE = "קהילה:מילון";
 
     private final MediaWikiGlossary wiki = new MediaWikiGlossary(MediaWikiGlossary.API);
     private volatile Glossary glossary;
@@ -83,7 +82,7 @@ public final class GlossaryModule extends ListenerAdapter implements BotModule {
         }
 
         String title = embeds.getFirst().getTitle();
-        if (title != null && title.contains(GLOSSARY_PAGE_TITLE)) {
+        if (title != null && title.contains(GlossaryMessage.PAGE_TITLE)) {
             refresh(event.getJDA());
         }
     }
